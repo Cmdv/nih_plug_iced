@@ -37,7 +37,7 @@ web-colors = ["iced_baseview/web-colors"]
 # - glow/opengl features (BillyDM's version is wgpu-only)
 
 [dependencies]
-nih_plug = { git = "https://github.com/robbert-vdh/nih_plug.git", default-features = false }
+nih_plug = { git = "https://github.com/Cmdv/nih-plug.git", branch = "expose-process-stopped", default-features = false }
 nih_plug_assets = { git = "https://github.com/robbert-vdh/nih_plug_assets.git" }
 
 # The currently targeted version of baseview uses a different version of
