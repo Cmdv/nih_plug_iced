@@ -167,7 +167,7 @@ pub trait IcedEditor: 'static + Send + Sync + Sized {
     /// See [`Application::Flags`].
     type InitializationFlags: 'static + Clone + Send + Sync;
     /// See [`Application::Theme`]
-    type Theme: Default + DefaultStyle;
+    type Theme: DefaultStyle;
 
     /// See [`Application::new`]. This also receivs the GUI context in addition to the flags.
     fn new(
@@ -201,9 +201,8 @@ pub trait IcedEditor: 'static + Send + Sync + Sized {
         Color::WHITE
     }
 
-    fn theme(&self) -> Self::Theme {
-        Self::Theme::default()
-    }
+    /// See [`Application::theme`].
+    fn theme(&self) -> Self::Theme;
 
     fn title(&self) -> String {
         "nih_plug plugin".to_owned()

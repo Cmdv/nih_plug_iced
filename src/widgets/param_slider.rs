@@ -4,11 +4,12 @@ use std::borrow::Borrow;
 use crate::core::text::{Paragraph, Renderer as TextRenderer, Text};
 use crate::core::widget::tree::{self, Tree};
 use crate::core::{
-    alignment, event, keyboard, layout, mouse, renderer, text, touch, Border, Clipboard, Color,
+    alignment, keyboard, layout, mouse, renderer, text, touch, Border, Clipboard, Color,
     Element, Event, Font, Layout, Length, Pixels, Rectangle, Shell, Size, Vector, Widget,
 };
 use crate::widget::text_input;
-use crate::widget::text_input::{Id, TextInput};
+use crate::widget::text_input::TextInput;
+use crate::core::widget::Id;
 
 use super::{util, ParamMessage};
 
@@ -144,8 +145,8 @@ impl<'a, P: Param> ParamSlider<'a, P> {
             size: text_size,
             font,
             line_height: Default::default(),
-            horizontal_alignment: alignment::Horizontal::Center,
-            vertical_alignment: alignment::Vertical::Center,
+            align_x: alignment::Horizontal::Center.into(),
+            align_y: alignment::Vertical::Center.into(),
             shaping: Default::default(),
             wrapping: Default::default(),
         })
@@ -233,7 +234,7 @@ where
     }
 
     fn layout(
-        &self,
+        &mut self,
         _tree: &mut Tree,
         _renderer: &Renderer,
         limits: &layout::Limits,
@@ -256,7 +257,7 @@ where
 
         let background_color =
             if cursor.is_over(bounds) || state.drag_active || state.text_input_value.is_some() {
-                Color::new(0.5, 0.5, 0.5, 0.1)
+                Color::from_rgba(0.5, 0.5, 0.5, 0.1)
             } else {
                 Color::TRANSPARENT
             };
@@ -349,8 +350,8 @@ where
                     font,
                     size: text_size,
                     bounds: text_bounds.size(),
-                    horizontal_alignment: alignment::Horizontal::Center,
-                    vertical_alignment: alignment::Vertical::Center,
+                    align_x: alignment::Horizontal::Center.into(),
+                    align_y: alignment::Vertical::Center.into(),
                     line_height: text::LineHeight::Relative(1.0),
                     shaping: Default::default(),
                     wrapping: Default::default(),
@@ -369,8 +370,8 @@ where
                         font,
                         size: text_size,
                         bounds: text_bounds.size(),
-                        horizontal_alignment: alignment::Horizontal::Center,
-                        vertical_alignment: alignment::Vertical::Center,
+                        align_x: alignment::Horizontal::Center.into(),
+                        align_y: alignment::Vertical::Center.into(),
                         line_height: text::LineHeight::Relative(1.0),
                         shaping: Default::default(),
                         wrapping: Default::default(),
@@ -383,17 +384,17 @@ where
         }
     }
 
-    fn on_event(
+    fn update(
         &mut self,
         tree: &mut Tree,
-        event: event::Event,
+        event: &Event,
         layout: Layout<'_>,
         cursor: mouse::Cursor,
         renderer: &Renderer,
         clipboard: &mut dyn Clipboard,
         shell: &mut Shell<'_, ParamMessage>,
         viewport: &Rectangle,
-    ) -> event::Status {
+    ) {
         let state = tree.state.downcast_mut::<State>();
 
         // The pressence of a value in `self.state.text_input_value` indicates that the field should
@@ -402,18 +403,17 @@ where
         //        otherwise. Widgets are not supposed to handle messages from other widgets, but
         //        we'll do so anyways by using a special `TextInputMessage` type and our own
         //        `Shell`.
-        let text_input_status = if let Some(current_value) = &state.text_input_value {
-            let event = event.clone();
+        if let Some(current_value) = &state.text_input_value {
             let mut messages = Vec::new();
             let mut text_input_shell = Shell::new(&mut messages);
 
-            let status = self.with_text_input(
+            self.with_text_input(
                 layout,
                 renderer,
                 current_value,
                 &state,
                 |mut text_input: TextInput<TextInputMessage, Theme, Renderer>, layout, renderer| {
-                    text_input.on_event(
+                    text_input.update(
                         &mut tree.children[0],
                         event,
                         layout,
@@ -457,12 +457,7 @@ where
                 state.text_input_value = None;
             }
 
-            status
-        } else {
-            event::Status::Ignored
-        };
-        if text_input_status == event::Status::Captured {
-            return event::Status::Captured;
+            return;
         }
 
         match event {
@@ -471,7 +466,7 @@ where
                 let bounds = layout.bounds();
 
                 let Some(cursor_position) = cursor.position_over(bounds) else {
-                    return event::Status::Ignored;
+                    return;
                 };
 
                 let click =
@@ -519,24 +514,21 @@ where
                     );
                     state.granular_drag_start_x_value = None;
                 }
-
-                event::Status::Captured
             }
             Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))
             | Event::Touch(touch::Event::FingerLifted { .. } | touch::Event::FingerLost { .. }) => {
                 if !state.drag_active {
-                    return event::Status::Ignored;
+                    return;
                 }
 
                 shell.publish(ParamMessage::EndSetParameter(self.param.as_ptr()));
                 state.drag_active = false;
-                event::Status::Captured
             }
             Event::Mouse(mouse::Event::CursorMoved { .. })
             | Event::Touch(touch::Event::FingerMoved { .. }) => {
                 // Don't do anything when we just reset the parameter because that would be weird
                 if !state.drag_active {
-                    return event::Status::Ignored;
+                    return;
                 }
 
                 let bounds = layout.bounds();
@@ -567,11 +559,9 @@ where
                         );
                     }
                 }
-
-                event::Status::Captured
             }
             Event::Keyboard(keyboard::Event::ModifiersChanged(modifiers)) => {
-                state.keyboard_modifiers = modifiers;
+                state.keyboard_modifiers = *modifiers;
                 let bounds = layout.bounds();
 
                 // If this happens while dragging, snap back to reality uh I mean the current screen
@@ -589,10 +579,8 @@ where
                         );
                     }
                 }
-
-                event::Status::Captured
             }
-            _ => event::Status::Ignored,
+            _ => {}
         }
     }
 

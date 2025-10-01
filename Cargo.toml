@@ -8,14 +8,14 @@ license = "ISC"
 description = "An adapter to use iced GUIs with NIH-plug"
 
 [features]
-# Default to wgpu rendering (modern Iced 0.13 approach)
+# Default to wgpu rendering (iced 0.14 from master)
 default = ["wgpu"]
 
-# Use wgpu rendering - now supported in Iced 0.13 
+# Use wgpu rendering - now supported in iced 0.14 
 wgpu = ["iced_baseview/wgpu"]
 
 # Enables a debug view in native platforms (press F12)
-debug = ["iced_baseview/debug"]
+debug = ["iced_baseview/toggle_debug"]
 
 # Enables the `Image` widget
 image = ["iced_baseview/image"]
@@ -47,8 +47,8 @@ raw-window-handle = "0.4"
 atomic_refcell = "0.1"
 baseview = { git = "https://github.com/RustAudio/baseview.git", rev = "579130ecb4f9f315ae52190af42f0ea46aeaa4a2" }
 crossbeam = "0.8"
-# This targets iced 0.13
-iced_baseview = { git = "https://github.com/BillyDM/iced_baseview.git", default-features = false }
+# This targets iced 0.14
+iced_baseview = { git = "https://github.com/Cmdv/iced_baseview", branch = "iced-14", default-features = false }
 
 futures-util = "0.3"
 # To make the state persistable

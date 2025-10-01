@@ -3,7 +3,7 @@
 
 use crate::core::widget::{Id, Operation, Tree};
 use crate::core::{
-    alignment, event, layout, renderer, text, Clipboard, Element, Layout, Length, Rectangle, Shell,
+    alignment, layout, renderer, text, Element, Layout, Length, Rectangle,
     Size, Widget,
 };
 use crate::widget::{self, row, scrollable, Column, Scrollable, Space};
@@ -62,7 +62,7 @@ pub struct GenericUi<W, Theme = crate::Theme, Renderer = crate::Renderer> {
     id: Option<Id>,
     width: Length,
     height: Length,
-    max_width: u16,
+    max_width: u32,
     max_height: u16,
 
     pad_scrollbar: bool,
@@ -86,7 +86,7 @@ impl<W, Theme, Renderer> GenericUi<W, Theme, Renderer> {
 
             width: Length::Fill,
             height: Length::Fill,
-            max_width: u16::MAX,
+            max_width: u32::MAX,
             max_height: u16::MAX,
             pad_scrollbar: false,
 
@@ -113,7 +113,7 @@ impl<W, Theme, Renderer> GenericUi<W, Theme, Renderer> {
     }
 
     /// Sets the maximum width of the [`GenericUi`].
-    pub fn max_width(mut self, width: u16) -> Self {
+    pub fn max_width(mut self, width: u32) -> Self {
         self.max_width = width;
         self
     }
@@ -167,7 +167,7 @@ where
                     .spacing(spacing * 2.0);
 
                     if self.pad_scrollbar {
-                        row.push(Space::with_width(0))
+                        row.push(Space::new().width(0))
                     } else {
                         row
                     }
@@ -207,7 +207,7 @@ where
     }
 
     fn layout(
-        &self,
+        &mut self,
         tree: &mut Tree,
         renderer: &Renderer,
         limits: &layout::Limits,
@@ -238,44 +238,21 @@ where
     }
 
     fn operate(
-        &self,
+        &mut self,
         tree: &mut Tree,
         layout: Layout<'_>,
         renderer: &Renderer,
         operation: &mut dyn Operation,
     ) {
-        operation.container(self.id.as_ref(), layout.bounds(), &mut |operation| {
-            self.content(Some(renderer)).operate(
-                tree,
-                layout.children().next().unwrap(),
-                renderer,
-                operation,
-            )
-        });
+        operation.container(self.id.as_ref(), layout.bounds());
+        self.content(Some(renderer)).operate(
+            tree,
+            layout.children().next().unwrap(),
+            renderer,
+            operation,
+        );
     }
 
-    fn on_event(
-        &mut self,
-        tree: &mut iced_baseview::core::widget::Tree,
-        event: event::Event,
-        layout: Layout<'_>,
-        cursor: iced_baseview::core::mouse::Cursor,
-        renderer: &Renderer,
-        clipboard: &mut dyn Clipboard,
-        shell: &mut Shell<'_, ParamMessage>,
-        viewport: &Rectangle,
-    ) -> event::Status {
-        self.content(Some(renderer)).on_event(
-            &mut tree.children[0],
-            event,
-            layout.children().next().unwrap(),
-            cursor,
-            renderer,
-            clipboard,
-            shell,
-            viewport,
-        )
-    }
 
     fn mouse_interaction(
         &self,

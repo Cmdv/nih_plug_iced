@@ -2,15 +2,47 @@
 //! `nih_plug_iced`.
 
 use crossbeam::channel;
-use futures_util::FutureExt;
 use iced_baseview::{
-    baseview::WindowScalePolicy, core::Element, futures::Subscription, window::WindowSubs,
+    baseview::WindowScalePolicy, core::Element, futures::{Subscription, subscription::{EventStream, Hasher, Recipe, from_recipe}}, window::WindowSubs,
     Renderer, Task,
 };
+use futures_util::stream::BoxStream;
 use nih_plug::prelude::GuiContext;
 use std::sync::Arc;
+use std::hash::Hash;
 
 use crate::{IcedEditor, ParameterUpdate};
+
+/// A custom subscription recipe for parameter updates from a crossbeam channel
+struct ParameterUpdatesRecipe {
+    receiver: Arc<channel::Receiver<ParameterUpdate>>,
+}
+
+impl Recipe for ParameterUpdatesRecipe {
+    type Output = ();
+
+    fn hash(&self, state: &mut Hasher) {
+        // Use a constant ID since we only have one parameter updates subscription
+        std::any::TypeId::of::<Self>().hash(state);
+    }
+
+    fn stream(self: Box<Self>, _input: EventStream) -> BoxStream<'static, Self::Output> {
+        Box::pin(futures_util::stream::unfold(
+            self.receiver,
+            |receiver| async move {
+                match receiver.try_recv() {
+                    Ok(_) => Some(((), receiver)),
+                    Err(channel::TryRecvError::Empty) => {
+                        // Wait a bit before checking again to avoid busy-waiting
+                        futures_util::future::pending::<()>().await;
+                        None
+                    }
+                    Err(channel::TryRecvError::Disconnected) => None,
+                }
+            },
+        ))
+    }
+}
 
 /// Wraps an `iced_baseview` [`Application`] around [`IcedEditor`]. Needed to allow editors to
 /// always receive a copy of the GUI context.
@@ -113,29 +145,10 @@ impl<E: IcedEditor> iced_baseview::Application for IcedEditorWrapperApplication<
         };
 
         let subscription = Subscription::batch([
-            // For some reason there's no adapter to just convert `futures::channel::mpsc::Receiver`
-            // into a stream that doesn't require consuming that receiver (which wouldn't work in
-            // this case since the subscriptions function gets called repeatedly). So we'll just use
-            // a crossbeam queue and this unfold instead.
-            Subscription::run_with_id(
-                "parameter updates",
-                futures_util::stream::unfold(
-                    self.parameter_updates_receiver.clone(),
-                    |parameter_updates_receiver| match parameter_updates_receiver.try_recv() {
-                        Ok(_) => futures_util::future::ready(Some((
-                            Message::ParameterUpdate,
-                            parameter_updates_receiver,
-                        )))
-                        .boxed(),
-                        Err(channel::TryRecvError::Empty) => {
-                            futures_util::future::pending().boxed()
-                        }
-                        Err(channel::TryRecvError::Disconnected) => {
-                            futures_util::future::ready(None).boxed()
-                        }
-                    },
-                ),
-            ),
+            from_recipe(ParameterUpdatesRecipe {
+                receiver: self.parameter_updates_receiver.clone(),
+            })
+            .map(|_| Message::ParameterUpdate),
             self.editor
                 .subscription(&mut editor_window_subs)
                 .map(Message::EditorMessage),
