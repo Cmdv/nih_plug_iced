@@ -133,6 +133,7 @@ impl<E: IcedEditor> iced_baseview::Application for IcedEditorWrapperApplication<
         // Since we're wrapping around `E::Message`, we need to do this transformation ourselves
         let on_frame = window_subs.on_frame.clone();
         let on_window_will_close = window_subs.on_window_will_close.clone();
+        let on_resize = window_subs.on_resize.clone();
         let mut editor_window_subs: WindowSubs<E::Message> = WindowSubs {
             on_frame: Some(Arc::new(move || {
                 let cb = on_frame.clone();
@@ -142,6 +143,11 @@ impl<E: IcedEditor> iced_baseview::Application for IcedEditorWrapperApplication<
                 let cb = on_window_will_close.clone();
                 cb.and_then(|cb| cb().and_then(|m| m.into_editor_message()))
             })),
+            on_resize: on_resize.clone().map(|cb| {
+                Arc::new(move |size| {
+                    cb(size).and_then(|m| m.into_editor_message())
+                }) as Arc<dyn Fn(iced_baseview::Size) -> Option<E::Message>>
+            }),
         };
 
         let subscription = Subscription::batch([

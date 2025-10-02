@@ -268,6 +268,12 @@ impl IcedState {
         self.size.load()
     }
 
+    /// Set the size of the GUI in logical pixels.
+    /// This will cause the window to resize on the next frame.
+    pub fn set_size(&self, width: u32, height: u32) {
+        self.size.store((width, height));
+    }
+
     /// Whether the GUI is currently visible.
     // Called `is_open()` instead of `open()` to avoid the ambiguity.
     pub fn is_open(&self) -> bool {
