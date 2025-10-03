@@ -92,7 +92,6 @@
 use ::baseview::WindowScalePolicy;
 use crossbeam::atomic::AtomicCell;
 use crossbeam::channel;
-use iced_baseview::futures::Subscription;
 use nih_plug::params::persist::PersistentField;
 use nih_plug::prelude::{Editor, GuiContext};
 use serde::{Deserialize, Serialize};
@@ -103,7 +102,11 @@ pub use std::fmt::Debug;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
+use crate::iced_baseview::futures::Subscription;
 use crate::widgets::ParamMessage;
+
+// Internal iced_baseview module (merged from separate crate)
+pub mod iced_baseview;
 
 /// Re-export for convenience.
 // FIXME: Running `cargo doc` on nightly compilers without this attribute triggers an ICE

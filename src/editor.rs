@@ -3,14 +3,14 @@
 use ::baseview::{WindowOpenOptions, WindowScalePolicy};
 use crossbeam::atomic::AtomicCell;
 use crossbeam::channel;
-use iced_baseview::settings::IcedBaseviewSettings;
+use crate::iced_baseview::settings::IcedBaseviewSettings;
 use nih_plug::prelude::{Editor, GuiContext, ParentWindowHandle};
 use std::sync::Arc;
 use std::{borrow::Cow, sync::atomic::Ordering};
 
 use crate::{wrapper, IcedEditor, IcedState, ParameterUpdate};
 
-pub use iced_baseview::*;
+pub use crate::iced_baseview::*;
 
 /// An [`Editor`] implementation that renders an iced [`Application`].
 pub(crate) struct IcedEditorWrapper<E: IcedEditor> {
@@ -38,7 +38,7 @@ impl<E: IcedEditor> Editor for IcedEditorWrapper<E> {
 
         // TODO: iced_baseview does not have gracefuly error handling for context creation failures.
         //       This will panic if the context could not be created.
-        let window = iced_baseview::open_parented::<wrapper::IcedEditorWrapperApplication<E>, _>(
+        let window = crate::iced_baseview::open_parented::<wrapper::IcedEditorWrapperApplication<E>, _>(
             &parent,
             (
                 context,
@@ -107,7 +107,7 @@ impl<E: IcedEditor> Editor for IcedEditorWrapper<E> {
 /// The window handle used for [`IcedEditorWrapper`].
 struct IcedEditorHandle<Message: 'static + Send> {
     iced_state: Arc<IcedState>,
-    window: iced_baseview::window::WindowHandle<Message>,
+    window: crate::iced_baseview::window::WindowHandle<Message>,
 }
 
 /// The window handle enum stored within 'WindowHandle' contains raw pointers. Is there a way around

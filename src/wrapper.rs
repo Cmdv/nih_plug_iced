@@ -2,7 +2,7 @@
 //! `nih_plug_iced`.
 
 use crossbeam::channel;
-use iced_baseview::{
+use crate::iced_baseview::{
     baseview::WindowScalePolicy, core::Element, futures::{Subscription, subscription::{EventStream, Hasher, Recipe, from_recipe}}, window::WindowSubs,
     Renderer, Task,
 };
@@ -91,7 +91,7 @@ impl<E: IcedEditor> Clone for Message<E> {
     }
 }
 
-impl<E: IcedEditor> iced_baseview::Application for IcedEditorWrapperApplication<E> {
+impl<E: IcedEditor> crate::iced_baseview::Application for IcedEditorWrapperApplication<E> {
     type Executor = E::Executor;
     type Message = Message<E>;
     type Flags = (
@@ -146,7 +146,7 @@ impl<E: IcedEditor> iced_baseview::Application for IcedEditorWrapperApplication<
             on_resize: on_resize.clone().map(|cb| {
                 Arc::new(move |size| {
                     cb(size).and_then(|m| m.into_editor_message())
-                }) as Arc<dyn Fn(iced_baseview::Size) -> Option<E::Message>>
+                }) as Arc<dyn Fn(crate::iced_baseview::Size) -> Option<E::Message>>
             }),
         };
 
@@ -168,6 +168,11 @@ impl<E: IcedEditor> iced_baseview::Application for IcedEditorWrapperApplication<
             let message = Arc::clone(message);
             window_subs.on_window_will_close =
                 Some(Arc::new(move || message().map(Message::EditorMessage)));
+        }
+        if let Some(message) = editor_window_subs.on_resize.as_ref() {
+            let message = Arc::clone(message);
+            window_subs.on_resize =
+                Some(Arc::new(move |size| message(size).map(Message::EditorMessage)));
         }
 
         subscription

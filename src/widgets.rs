@@ -10,10 +10,12 @@ use nih_plug::prelude::ParamPtr;
 pub mod generic_ui;
 pub mod param_slider;
 pub mod peak_meter;
+pub mod resize_handle;
 pub mod util;
 
 pub use param_slider::ParamSlider;
 pub use peak_meter::PeakMeter;
+pub use resize_handle::ResizeHandle;
 
 /// A message to update a parameter value. Since NIH-plug manages the parameters, interacting with
 /// parameter values with iced works a little different from updating any other state. This main

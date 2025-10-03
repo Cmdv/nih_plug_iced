@@ -11,44 +11,61 @@ description = "An adapter to use iced GUIs with NIH-plug"
 # Default to wgpu rendering (iced 0.14 from master)
 default = ["wgpu"]
 
-# Use wgpu rendering - now supported in iced 0.14 
-wgpu = ["iced_baseview/wgpu"]
+# Use wgpu rendering - now supported in iced 0.14
+wgpu = ["iced_renderer/wgpu", "iced_widget/wgpu"]
 
 # Enables a debug view in native platforms (press F12)
-debug = ["iced_baseview/toggle_debug"]
+debug = ["toggle_debug"]
+
+toggle_debug = []
 
 # Enables the `Image` widget
-image = ["iced_baseview/image"]
+image = ["iced_graphics/image", "iced_widget/image", "iced_renderer/image"]
 
-# Enables the `Svg` widget  
-svg = ["iced_baseview/svg"]
+# Enables the `Svg` widget
+svg = ["iced_graphics/svg", "iced_widget/svg", "iced_renderer/svg"]
 
 # Enables the `Canvas` widget - main goal of this modernization!
-canvas = ["iced_baseview/canvas"]
+canvas = ["iced_widget/canvas"]
 
 # Enables geometry rendering
-geometry = ["iced_baseview/geometry"]
+geometry = ["iced_graphics/geometry", "iced_renderer/geometry"]
 
 # Enables web-colors support
-web-colors = ["iced_baseview/web-colors"]
+web-colors = ["iced_graphics/web-colors", "iced_renderer/web-colors"]
 
-# NOTE: The following features from old version are no longer available:
-# - palette, tokio, async-std, smol (not in BillyDM's iced_baseview)
-# - glow/opengl features (BillyDM's version is wgpu-only)
+# System information support
+system = ["dep:sysinfo"]
+
+# Enable tracing
+trace = []
+
 
 [dependencies]
 nih_plug = { git = "https://github.com/Cmdv/nih-plug.git", branch = "expose-process-stopped", default-features = false }
 nih_plug_assets = { git = "https://github.com/robbert-vdh/nih_plug_assets.git" }
 
-# The currently targeted version of baseview uses a different version of
-# `raw_window_handle` than NIH-plug, so we need to manually convert between them
-raw-window-handle = "0.4"
-
 atomic_refcell = "0.1"
 baseview = { git = "https://github.com/RustAudio/baseview.git", rev = "579130ecb4f9f315ae52190af42f0ea46aeaa4a2" }
 crossbeam = "0.8"
-# This targets iced 0.14
-iced_baseview = { git = "https://github.com/Cmdv/iced_baseview", branch = "iced-14", default-features = false }
+
+# Dependencies from iced_baseview (now internal module)
+cfg-if = "1"
+window_clipboard = "0.4.1"
+iced_runtime = { git = "https://github.com/iced-rs/iced", branch = "master" }
+iced_renderer = { git = "https://github.com/iced-rs/iced", branch = "master" }
+iced_graphics = { git = "https://github.com/iced-rs/iced", branch = "master" }
+iced_widget = { git = "https://github.com/iced-rs/iced", branch = "master" }
+iced_debug = { git = "https://github.com/iced-rs/iced", branch = "master" }
+iced_futures = { git = "https://github.com/iced-rs/iced", branch = "master", features = [
+  "smol",
+] }
+keyboard-types = { version = "0.6", default-features = false }
+log = "0.4"
+raw-window-handle = "0.5"
+raw-window-handle-06 = { package = "raw-window-handle", version = "0.6" }
+thiserror = "1.0"
+sysinfo = { version = "0.30", optional = true }
 
 futures-util = "0.3"
 # To make the state persistable
