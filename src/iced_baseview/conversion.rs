@@ -20,6 +20,7 @@ pub fn baseview_to_iced_events(
         BaseEvent::Mouse(mouse_event) => match mouse_event {
             baseview::MouseEvent::CursorMoved {
                 position,
+                screen_position,
                 modifiers,
             } => {
                 if let Some(event) = update_modifiers(iced_modifiers, modifiers) {
@@ -27,6 +28,7 @@ pub fn baseview_to_iced_events(
                 }
                 iced_events.push(IcedEvent::Mouse(IcedMouseEvent::CursorMoved {
                     position: Point::new(position.x as f32, position.y as f32),
+                    screen_position: Point::new(screen_position.x as f32, screen_position.y as f32),
                 }));
             }
             baseview::MouseEvent::ButtonPressed { button, modifiers } => {

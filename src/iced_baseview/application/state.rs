@@ -126,6 +126,7 @@ where
             }
             baseview::Event::Mouse(baseview::MouseEvent::CursorMoved {
                 position,
+                screen_position: _,
                 modifiers: _,
             }) => {
                 self.cursor_position = Some(crate::core::Point {

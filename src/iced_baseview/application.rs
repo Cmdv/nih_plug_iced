@@ -298,6 +298,9 @@ where
         event_status,
 
         processed_close_signal: false,
+
+        // Initialize to 1.0, will be updated from first resize event
+        scale_factor: RefCell::new(1.0),
     })
 }
 
@@ -392,6 +395,15 @@ async fn run_instance<A, C>(
                     );
 
                     needs_update |= matches!(interface_state, user_interface::State::Outdated,);
+
+                    // Update mouse cursor based on widget interactions
+                    if let user_interface::State::Updated {
+                        mouse_interaction, ..
+                    } = interface_state
+                    {
+                        let cursor = crate::conversion::convert_mouse_interaction(mouse_interaction);
+                        let _ = window_queue.set_mouse_cursor(cursor);
+                    }
 
                     for (event, status) in events.drain(..).zip(statuses.into_iter()) {
                         // Check for resize events and call on_resize callback

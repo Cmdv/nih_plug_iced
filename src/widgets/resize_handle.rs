@@ -6,7 +6,8 @@ use crate::core::mouse;
 use crate::core::renderer;
 use crate::core::widget::{tree, Tree};
 use crate::core::{
-    Border, Clipboard, Color, Element, Length, Point, Rectangle, Shadow, Shell, Size, Vector, Widget,
+    Border, Clipboard, Color, Element, Length, Point, Rectangle, Shadow, Shell, Size, Vector,
+    Widget,
 };
 
 /// A resize handle placed at the bottom right of the window that lets you resize the window.
@@ -35,12 +36,15 @@ struct State {
     drag_active: bool,
     /// The window size when we started dragging
     start_size: Size,
-    /// The last cursor position (used to calculate delta between frames)
-    last_cursor: Point,
+    /// The last screen cursor position (used to calculate delta between frames)
+    /// Using screen coordinates prevents issues when window resizes change the coordinate space
+    last_screen_cursor: Point,
     /// The accumulated size from the start
     accumulated_size: Size,
     /// The last size we emitted to prevent duplicate messages
     last_emitted_size: Size,
+    /// Whether we've initialized the last_screen_cursor (to avoid using Point::ORIGIN as sentinel)
+    screen_cursor_initialized: bool,
 }
 
 impl<Message> ResizeHandle<Message> {
@@ -145,9 +149,9 @@ where
                     if bounds.contains(cursor_position) {
                         state.drag_active = true;
                         state.start_size = self.current_size;
-                        state.last_cursor = cursor_position;
                         state.accumulated_size = self.current_size;
                         state.last_emitted_size = self.current_size;
+                        state.screen_cursor_initialized = false;
                     }
                 }
             }
@@ -156,37 +160,39 @@ where
                     state.drag_active = false;
                 }
             }
-            Event::Mouse(mouse::Event::CursorMoved { .. }) => {
+            Event::Mouse(mouse::Event::CursorMoved {
+                screen_position, ..
+            }) => {
                 if state.drag_active {
-                    if let Some(cursor_position) = cursor.position() {
-                        // Calculate delta from LAST cursor position (incremental)
-                        // This avoids coordinate space issues when window resizes
-                        let delta = Vector::new(
-                            cursor_position.x - state.last_cursor.x,
-                            cursor_position.y - state.last_cursor.y,
-                        );
+                    // Use screen coordinates for delta calculation
+                    // This prevents coordinate space issues when the window resizes during drag
 
-                        // Update last cursor position for next frame
-                        state.last_cursor = cursor_position;
+                    // On first move, initialize last_screen_cursor
+                    if !state.screen_cursor_initialized {
+                        state.last_screen_cursor = *screen_position;
+                        state.screen_cursor_initialized = true;
+                        return; // Skip first frame to avoid false delta
+                    }
 
-                        // Accumulate the delta into our size
-                        state.accumulated_size.width = (state.accumulated_size.width + delta.x).max(self.min_width);
-                        state.accumulated_size.height = (state.accumulated_size.height + delta.y).max(self.min_height);
+                    // Calculate delta from LAST screen cursor position (incremental)
+                    let delta = Vector::new(
+                        screen_position.x - state.last_screen_cursor.x,
+                        screen_position.y - state.last_screen_cursor.y,
+                    );
 
-                        // Only emit if the size actually changed to reduce message spam
-                        if state.accumulated_size != state.last_emitted_size {
-                            nih_plug::nih_log!(
-                                "ResizeHandle: cursor: ({}, {}), delta: ({}, {}), bounds: ({}, {}), accumulated size: {}x{}",
-                                cursor_position.x, cursor_position.y,
-                                delta.x, delta.y,
-                                bounds.x, bounds.y,
-                                state.accumulated_size.width, state.accumulated_size.height
-                            );
+                    // Update last screen cursor position for next frame
+                    state.last_screen_cursor = *screen_position;
 
-                            state.last_emitted_size = state.accumulated_size;
-                            // Emit the resize message
-                            shell.publish((self.on_resize)(state.accumulated_size));
-                        }
+                    // Accumulate the delta into our size
+                    state.accumulated_size.width =
+                        (state.accumulated_size.width + delta.x).max(self.min_width);
+                    state.accumulated_size.height =
+                        (state.accumulated_size.height + delta.y).max(self.min_height);
+
+                    // Only emit if the size actually changed to reduce message spam
+                    if state.accumulated_size != state.last_emitted_size {
+                        state.last_emitted_size = state.accumulated_size;
+                        shell.publish((self.on_resize)(state.accumulated_size));
                     }
                 }
             }
@@ -206,35 +212,61 @@ where
     ) {
         let bounds = layout.bounds();
 
-        // Draw a simple triangle in the bottom-right corner
-        // Points: bottom-left, bottom-right, top-right (forming a right-angled triangle)
-        renderer.fill_quad(
-            renderer::Quad {
-                bounds,
-                border: Border {
-                    color: Color::TRANSPARENT,
-                    width: 0.0,
-                    radius: 0.0.into(),
+        // Draw 6 circles in a diagonal grid pattern
+        // Pattern: 1 circle (top), 2 circles (middle), 3 circles (bottom)
+        let circle_radius = 2.0;
+        let spacing = bounds.width / 3.5; // Space between circles
+
+        // Define circle positions (row, col) in the grid
+        let positions = [
+            (0, 2), // Top row: 1 circle (right)
+            (1, 1), (1, 2), // Middle row: 2 circles
+            (2, 0), (2, 1), (2, 2), // Bottom row: 3 circles
+        ];
+
+        for (row, col) in positions {
+            let x = bounds.x + col as f32 * spacing + spacing * 0.5;
+            let y = bounds.y + row as f32 * spacing + spacing * 0.5;
+
+            let circle_bounds = Rectangle {
+                x: x - circle_radius,
+                y: y - circle_radius,
+                width: circle_radius * 2.0,
+                height: circle_radius * 2.0,
+            };
+
+            renderer.fill_quad(
+                renderer::Quad {
+                    bounds: circle_bounds,
+                    border: Border::default(),
+                    shadow: Shadow::default(),
+                    ..Default::default()
                 },
-                shadow: Shadow::default(),
-                ..Default::default()
-            },
-            self.color,
-        );
+                self.color,
+            );
+        }
     }
 
     fn mouse_interaction(
         &self,
-        _tree: &Tree,
+        tree: &Tree,
         layout: Layout<'_>,
         cursor: mouse::Cursor,
         _viewport: &Rectangle,
         _renderer: &Renderer,
     ) -> mouse::Interaction {
+        let state = tree.state.downcast_ref::<State>();
+
+        // If we're actively dragging, always show the resize cursor
+        // even if the mouse moves outside the handle bounds
+        if state.drag_active {
+            return mouse::Interaction::ResizingDiagonallyDown;
+        }
+
+        // Otherwise, only show resize cursor when hovering over the handle
         if let Some(cursor_position) = cursor.position() {
-            // TODO: Use triangle intersection when we draw actual triangle
             if layout.bounds().contains(cursor_position) {
-                return mouse::Interaction::Grabbing;
+                return mouse::Interaction::ResizingDiagonallyDown;
             }
         }
 
@@ -242,7 +274,8 @@ where
     }
 }
 
-impl<'a, Message, Theme, Renderer> From<ResizeHandle<Message>> for Element<'a, Message, Theme, Renderer>
+impl<'a, Message, Theme, Renderer> From<ResizeHandle<Message>>
+    for Element<'a, Message, Theme, Renderer>
 where
     Message: 'a,
     Theme: 'a,
@@ -259,69 +292,4 @@ pub fn resize_handle<Message>(
     on_resize: impl Fn(Size) -> Message + 'static,
 ) -> ResizeHandle<Message> {
     ResizeHandle::new(current_size, on_resize)
-}
-
-/// Test whether a point intersects with the triangle of this resize handle.
-///
-/// The triangle is formed by three points:
-/// - Bottom-left corner of the bounds
-/// - Bottom-right corner of the bounds
-/// - Top-right corner of the bounds
-///
-/// This creates a right-angled triangle in the bottom-right corner.
-fn intersects_triangle(bounds: Rectangle, point: Point) -> bool {
-    // We use the determinant method (cross product) to check if the point is on the correct side
-    // of each edge of the triangle. For a point to be inside, it must be on the right side of all
-    // edges when traversed clockwise.
-
-    // Triangle vertices (clockwise from bottom-left)
-    let p1 = Point::new(bounds.x, bounds.y + bounds.height); // Bottom-left
-    let p2 = Point::new(bounds.x + bounds.width, bounds.y + bounds.height); // Bottom-right
-    let p3 = Point::new(bounds.x + bounds.width, bounds.y); // Top-right
-
-    // Edge from p1 to p2 (bottom edge)
-    let v1 = Vector::new(p2.x - p1.x, p2.y - p1.y);
-    let to_point1 = Vector::new(point.x - p1.x, point.y - p1.y);
-    let cross1 = v1.x * to_point1.y - v1.y * to_point1.x;
-
-    // Edge from p2 to p3 (right edge)
-    let v2 = Vector::new(p3.x - p2.x, p3.y - p2.y);
-    let to_point2 = Vector::new(point.x - p2.x, point.y - p2.y);
-    let cross2 = v2.x * to_point2.y - v2.y * to_point2.x;
-
-    // Edge from p3 to p1 (diagonal edge)
-    let v3 = Vector::new(p1.x - p3.x, p1.y - p3.y);
-    let to_point3 = Vector::new(point.x - p3.x, point.y - p3.y);
-    let cross3 = v3.x * to_point3.y - v3.y * to_point3.x;
-
-    // Point is inside if all cross products have the same sign (all >= 0 for clockwise winding)
-    cross1 >= 0.0 && cross2 >= 0.0 && cross3 >= 0.0
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn triangle_intersection() {
-        let bounds = Rectangle {
-            x: 10.0,
-            y: 10.0,
-            width: 10.0,
-            height: 10.0,
-        };
-
-        // Corners
-        assert!(!intersects_triangle(bounds, Point::new(10.0, 10.0))); // Top-left (outside)
-        assert!(intersects_triangle(bounds, Point::new(20.0, 10.0))); // Top-right (vertex)
-        assert!(intersects_triangle(bounds, Point::new(10.0, 20.0))); // Bottom-left (vertex)
-        assert!(intersects_triangle(bounds, Point::new(20.0, 20.0))); // Bottom-right (vertex)
-
-        // Inside the triangle
-        assert!(intersects_triangle(bounds, Point::new(15.0, 15.0)));
-
-        // Outside the triangle (top-left region)
-        assert!(!intersects_triangle(bounds, Point::new(14.9, 15.0)));
-        assert!(!intersects_triangle(bounds, Point::new(15.0, 14.9)));
-    }
 }

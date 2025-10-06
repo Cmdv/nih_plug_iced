@@ -46,18 +46,18 @@ nih_plug = { git = "https://github.com/Cmdv/nih-plug.git", branch = "expose-proc
 nih_plug_assets = { git = "https://github.com/robbert-vdh/nih_plug_assets.git" }
 
 atomic_refcell = "0.1"
-baseview = { git = "https://github.com/RustAudio/baseview.git", rev = "579130ecb4f9f315ae52190af42f0ea46aeaa4a2" }
+baseview = { path = "../baseview" }
 crossbeam = "0.8"
 
 # Dependencies from iced_baseview (now internal module)
 cfg-if = "1"
 window_clipboard = "0.4.1"
-iced_runtime = { git = "https://github.com/iced-rs/iced", branch = "master" }
-iced_renderer = { git = "https://github.com/iced-rs/iced", branch = "master" }
-iced_graphics = { git = "https://github.com/iced-rs/iced", branch = "master" }
-iced_widget = { git = "https://github.com/iced-rs/iced", branch = "master" }
-iced_debug = { git = "https://github.com/iced-rs/iced", branch = "master" }
-iced_futures = { git = "https://github.com/iced-rs/iced", branch = "master", features = [
+iced_runtime = { git = "https://github.com/Cmdv/iced.git", branch = "screen-cursor-location" }
+iced_renderer = { git = "https://github.com/Cmdv/iced.git", branch = "screen-cursor-location" }
+iced_graphics = { git = "https://github.com/Cmdv/iced.git", branch = "screen-cursor-location" }
+iced_widget = { git = "https://github.com/Cmdv/iced.git", branch = "screen-cursor-location" }
+iced_debug = { git = "https://github.com/Cmdv/iced.git", branch = "screen-cursor-location" }
+iced_futures = { git = "https://github.com/Cmdv/iced.git", branch = "screen-cursor-location", features = [
   "smol",
 ] }
 keyboard-types = { version = "0.6", default-features = false }

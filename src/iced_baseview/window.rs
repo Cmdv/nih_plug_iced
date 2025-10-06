@@ -42,6 +42,9 @@ where
     pub event_status: Rc<RefCell<EventStatus>>,
 
     pub processed_close_signal: bool,
+
+    /// Cached scale factor from the last window resize event
+    pub scale_factor: RefCell<f64>,
 }
 
 impl<A> IcedWindow<A>
@@ -111,7 +114,6 @@ where
                     window.close();
                 }
                 WindowCommand::ResizeWindow(size) => {
-                    // Call baseview resize
                     let new_size = baseview::Size {
                         width: size.width as f64,
                         height: size.height as f64,
@@ -120,9 +122,8 @@ where
 
                     // Manually trigger resize event since baseview doesn't automatically
                     // fire WindowEvent::Resized when resize() is called programmatically.
-                    // We construct a WindowInfo assuming the current scale factor (usually 2.0 on Retina).
-                    // The scale factor is typically constant unless the window moves between displays.
-                    let scale_factor = 2.0; // TODO: Get actual scale factor from somewhere
+                    // Use the cached scale factor from the last actual resize event.
+                    let scale_factor = *self.scale_factor.borrow();
                     let window_info = baseview::WindowInfo::from_logical_size(new_size, scale_factor);
 
                     // Send the resize event through the event system
@@ -183,6 +184,11 @@ where
     fn on_event(&mut self, window: &mut Window<'_>, event: Event) -> EventStatus {
         if self.processed_close_signal {
             return EventStatus::Ignored;
+        }
+
+        // Cache the scale factor from resize events for use in programmatic resizes
+        if let Event::Window(baseview::WindowEvent::Resized(window_info)) = &event {
+            *self.scale_factor.borrow_mut() = window_info.scale();
         }
 
         let status = if requests_exit(&event) {
