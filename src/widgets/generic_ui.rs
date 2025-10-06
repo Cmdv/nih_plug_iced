@@ -191,7 +191,7 @@ where
     Theme: scrollable::Catalog + widget::text::Catalog + 'a,
     Renderer: text::Renderer + 'a,
 {
-    fn size(&self) -> iced_baseview::Size<Length> {
+    fn size(&self) -> crate::iced_baseview::Size<Length> {
         Size {
             width: self.width,
             height: self.height,
@@ -218,12 +218,12 @@ where
 
     fn draw(
         &self,
-        tree: &iced_baseview::core::widget::Tree,
+        tree: &crate::iced_baseview::core::widget::Tree,
         renderer: &mut Renderer,
         theme: &Theme,
         style: &renderer::Style,
         layout: Layout<'_>,
-        cursor: iced_baseview::core::mouse::Cursor,
+        cursor: crate::iced_baseview::core::mouse::Cursor,
         viewport: &Rectangle,
     ) {
         self.content(Some(renderer)).draw(
@@ -258,10 +258,10 @@ where
         &self,
         tree: &Tree,
         layout: Layout<'_>,
-        cursor: iced_baseview::core::mouse::Cursor,
+        cursor: crate::iced_baseview::core::mouse::Cursor,
         viewport: &Rectangle,
         renderer: &Renderer,
-    ) -> iced_baseview::core::mouse::Interaction {
+    ) -> crate::iced_baseview::core::mouse::Interaction {
         self.content(Some(renderer)).mouse_interaction(
             &tree.children[0],
             layout.children().next().unwrap(),
