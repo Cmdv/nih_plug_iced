@@ -40,18 +40,21 @@ system = ["dep:sysinfo"]
 # Enable tracing
 trace = []
 
-
 [dependencies]
+# https://github.com/robbert-vdh/nih-plug/pull/231
 nih_plug = { git = "https://github.com/Cmdv/nih-plug.git", branch = "expose-process-stopped", default-features = false }
 nih_plug_assets = { git = "https://github.com/robbert-vdh/nih_plug_assets.git" }
 
 atomic_refcell = "0.1"
-baseview = { path = "../baseview" }
+# https://github.com/RustAudio/baseview/pull/211
+baseview = { git = "https://github.com/Cmdv/baseview.git", branch = "resize-window" }
 crossbeam = "0.8"
 
 # Dependencies from iced_baseview (now internal module)
 cfg-if = "1"
 window_clipboard = "0.4.1"
+
+# https://github.com/iced-rs/iced/pull/3071
 iced_runtime = { git = "https://github.com/Cmdv/iced.git", branch = "screen-cursor-location" }
 iced_renderer = { git = "https://github.com/Cmdv/iced.git", branch = "screen-cursor-location" }
 iced_graphics = { git = "https://github.com/Cmdv/iced.git", branch = "screen-cursor-location" }
