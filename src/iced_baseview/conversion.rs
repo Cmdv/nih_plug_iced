@@ -20,7 +20,7 @@ pub fn baseview_to_iced_events(
         BaseEvent::Mouse(mouse_event) => match mouse_event {
             baseview::MouseEvent::CursorMoved {
                 position,
-                screen_position,
+                screen_position: _,
                 modifiers,
             } => {
                 if let Some(event) = update_modifiers(iced_modifiers, modifiers) {
@@ -28,7 +28,6 @@ pub fn baseview_to_iced_events(
                 }
                 iced_events.push(IcedEvent::Mouse(IcedMouseEvent::CursorMoved {
                     position: Point::new(position.x as f32, position.y as f32),
-                    screen_position: Point::new(screen_position.x as f32, screen_position.y as f32),
                 }));
             }
             baseview::MouseEvent::ButtonPressed { button, modifiers } => {
@@ -106,6 +105,7 @@ pub fn baseview_to_iced_events(
                     modifiers: *iced_modifiers,
                     location,
                     text,
+                    repeat: false,
                 }));
             } else {
                 iced_events.push(IcedEvent::Keyboard(IcedKeyEvent::KeyReleased {
@@ -690,7 +690,6 @@ pub fn convert_mouse_interaction(
         ICursor::Grab => BCursor::HandGrabbing,
         ICursor::Text => BCursor::Text,
         ICursor::Crosshair => BCursor::Crosshair,
-        ICursor::Working => BCursor::Working,
         ICursor::Grabbing => BCursor::HandGrabbing,
         ICursor::ResizingHorizontally => BCursor::ColResize,
         ICursor::ResizingVertically => BCursor::RowResize,
@@ -703,6 +702,7 @@ pub fn convert_mouse_interaction(
         ICursor::Move => BCursor::Move,
         ICursor::Copy => BCursor::Copy,
         ICursor::Help => BCursor::Help,
+        _ => BCursor::Default,
     }
 }
 

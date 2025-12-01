@@ -25,6 +25,8 @@ pub struct ResizeHandle<Message> {
     min_height: f32,
     /// Current window size (needed for drag calculations)
     current_size: Size,
+    /// Current screen cursor position (from State)
+    screen_cursor: Option<Point>,
     /// Callback to emit the new window size when dragging
     on_resize: Box<dyn Fn(Size) -> Message>,
 }
@@ -75,8 +77,15 @@ impl<Message> ResizeHandle<Message> {
             min_width: 400.0,
             min_height: 300.0,
             current_size,
+            screen_cursor: None,
             on_resize: Box::new(on_resize),
         }
+    }
+
+    /// Set the current screen cursor position from State
+    pub fn screen_cursor(mut self, screen_cursor: Option<Point>) -> Self {
+        self.screen_cursor = screen_cursor;
+        self
     }
 
     /// Set the size of the handle in logical pixels (default: 20.0)
@@ -160,39 +169,39 @@ where
                     state.drag_active = false;
                 }
             }
-            Event::Mouse(mouse::Event::CursorMoved {
-                screen_position, ..
-            }) => {
+            Event::Mouse(mouse::Event::CursorMoved { .. }) => {
                 if state.drag_active {
-                    // Use screen coordinates for delta calculation
-                    // This prevents coordinate space issues when the window resizes during drag
+                    if let Some(screen_position) = self.screen_cursor {
+                        // Use screen coordinates for delta calculation
+                        // This prevents coordinate space issues when the window resizes during drag
 
-                    // On first move, initialize last_screen_cursor
-                    if !state.screen_cursor_initialized {
-                        state.last_screen_cursor = *screen_position;
-                        state.screen_cursor_initialized = true;
-                        return; // Skip first frame to avoid false delta
-                    }
+                        // On first move, initialize last_screen_cursor
+                        if !state.screen_cursor_initialized {
+                            state.last_screen_cursor = screen_position;
+                            state.screen_cursor_initialized = true;
+                            return; // Skip first frame to avoid false delta
+                        }
 
-                    // Calculate delta from LAST screen cursor position (incremental)
-                    let delta = Vector::new(
-                        screen_position.x - state.last_screen_cursor.x,
-                        screen_position.y - state.last_screen_cursor.y,
-                    );
+                        // Calculate delta from LAST screen cursor position (incremental)
+                        let delta = Vector::new(
+                            screen_position.x - state.last_screen_cursor.x,
+                            screen_position.y - state.last_screen_cursor.y,
+                        );
 
-                    // Update last screen cursor position for next frame
-                    state.last_screen_cursor = *screen_position;
+                        // Update last screen cursor position for next frame
+                        state.last_screen_cursor = screen_position;
 
-                    // Accumulate the delta into our size
-                    state.accumulated_size.width =
-                        (state.accumulated_size.width + delta.x).max(self.min_width);
-                    state.accumulated_size.height =
-                        (state.accumulated_size.height + delta.y).max(self.min_height);
+                        // Accumulate the delta into our size
+                        state.accumulated_size.width =
+                            (state.accumulated_size.width + delta.x).max(self.min_width);
+                        state.accumulated_size.height =
+                            (state.accumulated_size.height + delta.y).max(self.min_height);
 
-                    // Only emit if the size actually changed to reduce message spam
-                    if state.accumulated_size != state.last_emitted_size {
-                        state.last_emitted_size = state.accumulated_size;
-                        shell.publish((self.on_resize)(state.accumulated_size));
+                        // Only emit if the size actually changed to reduce message spam
+                        if state.accumulated_size != state.last_emitted_size {
+                            state.last_emitted_size = state.accumulated_size;
+                            shell.publish((self.on_resize)(state.accumulated_size));
+                        }
                     }
                 }
             }

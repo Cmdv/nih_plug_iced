@@ -17,6 +17,7 @@ where
     viewport: Viewport,
     viewport_version: usize,
     cursor_position: Option<iced_runtime::core::Point>,
+    screen_cursor_position: Option<iced_runtime::core::Point>,
     theme: A::Theme,
     appearance: Appearance,
     application: PhantomData<A>,
@@ -45,6 +46,7 @@ where
             viewport,
             viewport_version: 0,
             cursor_position: None,
+            screen_cursor_position: None,
             theme,
             appearance,
             application: PhantomData,
@@ -84,6 +86,15 @@ where
         self.cursor_position
             .map(mouse::Cursor::Available)
             .unwrap_or(mouse::Cursor::Unavailable)
+    }
+
+    /// Returns the current screen-absolute cursor position of the [`State`].
+    ///
+    /// This returns the cursor position in screen coordinates (absolute),
+    /// which remains stable during window resize operations.
+    /// Useful for widgets that need to track cursor movement during window geometry changes.
+    pub fn screen_cursor(&self) -> Option<iced_runtime::core::Point> {
+        self.screen_cursor_position
     }
 
     /// Returns the current theme of the [`State`].
@@ -126,12 +137,16 @@ where
             }
             baseview::Event::Mouse(baseview::MouseEvent::CursorMoved {
                 position,
-                screen_position: _,
+                screen_position,
                 modifiers: _,
             }) => {
                 self.cursor_position = Some(crate::core::Point {
                     x: position.x as f32,
                     y: position.y as f32,
+                });
+                self.screen_cursor_position = Some(crate::core::Point {
+                    x: screen_position.x as f32,
+                    y: screen_position.y as f32,
                 });
 
                 // TODO: Encode cursor moving outside of the window.

@@ -244,7 +244,12 @@ where
     let window06 = crate::conversion::convert_window(window);
 
     let graphics_settings = settings.graphics_settings;
-    let mut compositor = runtime.block_on(C::new(graphics_settings, window06.clone()))?;
+    let mut compositor = runtime.block_on(C::new(
+        graphics_settings,
+        window06.clone(),
+        window06.clone(),
+        iced_graphics::Shell::headless(),
+    ))?;
     let surface = compositor.create_surface(
         window06,
         viewport.physical_width(),
@@ -766,5 +771,6 @@ pub fn run_action<A, C>(
             let _ = window_queue.close_window();
         }
         Action::Reload => todo!(),
+        Action::Image(_) => {}
     }
 }
