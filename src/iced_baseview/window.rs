@@ -110,7 +110,6 @@ where
         while let Ok(Some(cmd)) = self.window_queue_rx.try_next() {
             match cmd {
                 WindowCommand::CloseWindow => {
-                    nih_plug::nih_log!("WindowCommand::CloseWindow received");
                     window.close();
                 }
                 WindowCommand::ResizeWindow(size) => {

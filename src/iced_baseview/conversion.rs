@@ -120,20 +120,9 @@ pub fn baseview_to_iced_events(
 
         BaseEvent::Window(window_event) => match window_event {
             baseview::WindowEvent::Resized(window_info) => {
-                // Debug logging: Log complete window info for resize debugging
-                // This helps track down scaling/zoom issues by showing all size information
+                // Extract size information from baseview's window info
+                // Logical size = DPI-independent size that iced expects
                 let logical_size = window_info.logical_size();
-                let physical_size = window_info.physical_size();
-                let scale = window_info.scale();
-
-                nih_plug::nih_log!(
-                    "Window resize event - Logical: {}x{}, Physical: {}x{}, Scale: {:.2}",
-                    logical_size.width,
-                    logical_size.height,
-                    physical_size.width,
-                    physical_size.height,
-                    scale
-                );
 
                 // Pass logical size to iced (physical size is available via Viewport)
                 iced_events.push(IcedEvent::Window(IcedWindowEvent::Resized(

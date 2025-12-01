@@ -718,7 +718,6 @@ pub fn run_action<A, C>(
                 let _ = window_queue.close_window();
             }
             IWindowAction::Resize(_, size) => {
-                nih_plug::nih_log!("Action::Window::Resize received - size: {}x{}", size.width, size.height);
                 let _ = window_queue.resize_window(size);
             }
             IWindowAction::GainFocus(_) => {

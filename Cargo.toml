@@ -55,12 +55,12 @@ cfg-if = "1"
 window_clipboard = "0.4.1"
 
 # https://github.com/iced-rs/iced/pull/3071
-iced_runtime = { git = "https://github.com/Cmdv/iced.git", branch = "screen-cursor-location" }
-iced_renderer = { git = "https://github.com/Cmdv/iced.git", branch = "screen-cursor-location" }
-iced_graphics = { git = "https://github.com/Cmdv/iced.git", branch = "screen-cursor-location" }
-iced_widget = { git = "https://github.com/Cmdv/iced.git", branch = "screen-cursor-location" }
-iced_debug = { git = "https://github.com/Cmdv/iced.git", branch = "screen-cursor-location" }
-iced_futures = { git = "https://github.com/Cmdv/iced.git", branch = "screen-cursor-location", features = [
+iced_runtime = { git = "git@github.com:iced-rs/iced.git" }
+iced_renderer = { git = "git@github.com:iced-rs/iced.git" }
+iced_graphics = { git = "git@github.com:iced-rs/iced.git" }
+iced_widget = { git = "git@github.com:iced-rs/iced.git" }
+iced_debug = { git = "git@github.com:iced-rs/iced.git" }
+iced_futures = { git = "git@github.com:iced-rs/iced.git", features = [
   "smol",
 ] }
 keyboard-types = { version = "0.6", default-features = false }
