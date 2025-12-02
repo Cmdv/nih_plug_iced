@@ -1,4 +1,4 @@
-# NIH-plug: iced support (Modernized Port with Window Resize)
+# NIH-plug: Iced 0.14 + resize_window + process_stopped
 
 This is a standalone modernized port of [nih_plug_iced](https://github.com/robbert-vdh/nih-plug/tree/master/nih_plug_iced)
 from NIH-plug, updated to work with [Iced 0.14](https://github.com/iced-rs/iced) and featuring
@@ -48,11 +48,6 @@ This crate relies on several forked dependencies with custom features:
 - **Branch**: `resize-window`
 - **Purpose**: Adds screen-absolute mouse position support for window resize operations
 - **Benefits**: Provides reliable mouse coordinate tracking during window geometry changes, essential for custom resize handles
-
-### iced ([PR #3071](https://github.com/iced-rs/iced/pull/3071))
-- **Branch**: `screen-cursor-location`
-- **Purpose**: Adds `screen_position: Point` field to `CursorMoved` events
-- **Benefits**: Enables stable window resize calculations by providing screen-absolute coordinates that remain constant during resize operations
 
 ## Window Resize Support
 

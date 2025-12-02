@@ -23,6 +23,10 @@ pub struct Settings {
 
     /// The fonts to load on boot.
     pub fonts: Vec<Cow<'static, [u8]>>,
+
+    /// Optional callback for screen cursor position updates.
+    /// Called whenever the screen-absolute cursor position changes.
+    pub screen_cursor_callback: Option<Box<dyn Fn(Option<crate::core::Point>) + Send + Sync>>,
 }
 
 impl Default for Settings {
@@ -36,6 +40,7 @@ impl Default for Settings {
             iced_baseview: IcedBaseviewSettings::default(),
             graphics_settings: GraphicsSettings::default(),
             fonts: Default::default(),
+            screen_cursor_callback: None,
         }
     }
 }

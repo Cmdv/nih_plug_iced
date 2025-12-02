@@ -244,7 +244,12 @@ where
     let window06 = crate::conversion::convert_window(window);
 
     let graphics_settings = settings.graphics_settings;
-    let mut compositor = runtime.block_on(C::new(graphics_settings, window06.clone()))?;
+    let mut compositor = runtime.block_on(C::new(
+        graphics_settings,
+        window06.clone(),
+        window06.clone(),
+        iced_graphics::Shell::headless(),
+    ))?;
     let surface = compositor.create_surface(
         window06,
         viewport.physical_width(),
@@ -259,7 +264,12 @@ where
     let (window_queue, window_queue_rx) = WindowQueue::new();
     let event_status = Rc::new(RefCell::new(baseview::EventStatus::Ignored));
 
-    let state = State::new(&application, viewport);
+    let mut state = State::new(&application, viewport);
+
+    // Set up screen cursor callback if provided
+    if let Some(callback) = settings.screen_cursor_callback {
+        state.set_screen_cursor_callback(Some(callback));
+    }
 
     let display_handle = crate::conversion::convert_raw_display_handle(window.raw_display_handle());
     let clipboard = Clipboard::new(display_handle);
@@ -718,7 +728,6 @@ pub fn run_action<A, C>(
                 let _ = window_queue.close_window();
             }
             IWindowAction::Resize(_, size) => {
-                nih_plug::nih_log!("Action::Window::Resize received - size: {}x{}", size.width, size.height);
                 let _ = window_queue.resize_window(size);
             }
             IWindowAction::GainFocus(_) => {
@@ -767,5 +776,6 @@ pub fn run_action<A, C>(
             let _ = window_queue.close_window();
         }
         Action::Reload => todo!(),
+        Action::Image(_) => {}
     }
 }

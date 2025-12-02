@@ -241,6 +241,10 @@ pub struct IcedState {
     /// Whether the editor's window is currently open.
     #[serde(skip)]
     open: AtomicBool,
+    /// The current screen-absolute cursor position (x, y) in logical pixels.
+    /// Used by widgets that need stable cursor tracking during window resize.
+    #[serde(skip)]
+    screen_cursor: AtomicCell<Option<(f32, f32)>>,
 }
 
 impl<'a> PersistentField<'a, IcedState> for Arc<IcedState> {
@@ -263,6 +267,7 @@ impl IcedState {
         Arc::new(IcedState {
             size: AtomicCell::new((width, height)),
             open: AtomicBool::new(false),
+            screen_cursor: AtomicCell::new(None),
         })
     }
 
@@ -281,6 +286,17 @@ impl IcedState {
     // Called `is_open()` instead of `open()` to avoid the ambiguity.
     pub fn is_open(&self) -> bool {
         self.open.load(Ordering::Acquire)
+    }
+
+    /// Returns the current screen-absolute cursor position as an iced Point, if available.
+    /// This position is in screen coordinates and remains stable during window resize operations.
+    pub fn screen_cursor(&self) -> Option<crate::core::Point> {
+        self.screen_cursor.load().map(|(x, y)| crate::core::Point { x, y })
+    }
+
+    /// Set the screen-absolute cursor position. Called internally by the iced_baseview integration.
+    pub(crate) fn set_screen_cursor(&self, position: Option<crate::core::Point>) {
+        self.screen_cursor.store(position.map(|p| (p.x, p.y)));
     }
 }
 

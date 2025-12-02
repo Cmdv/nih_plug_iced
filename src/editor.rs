@@ -38,6 +38,12 @@ impl<E: IcedEditor> Editor for IcedEditorWrapper<E> {
 
         // TODO: iced_baseview does not have gracefuly error handling for context creation failures.
         //       This will panic if the context could not be created.
+        // Set up callback to sync screen cursor to IcedState
+        let iced_state_for_callback = self.iced_state.clone();
+        let screen_cursor_callback = Box::new(move |pos: Option<crate::core::Point>| {
+            iced_state_for_callback.set_screen_cursor(pos);
+        });
+
         let window = crate::iced_baseview::open_parented::<wrapper::IcedEditorWrapperApplication<E>, _>(
             &parent,
             (
@@ -62,6 +68,7 @@ impl<E: IcedEditor> Editor for IcedEditorWrapper<E> {
                 },
                 graphics_settings: GraphicsSettings::default(), // wgpu renderer by default
                 fonts: self.fonts.clone(),
+                screen_cursor_callback: Some(screen_cursor_callback),
             },
         );
 
