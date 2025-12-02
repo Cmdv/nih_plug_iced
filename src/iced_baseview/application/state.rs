@@ -26,6 +26,10 @@ where
     scale_policy: WindowScalePolicy,
     modifiers: iced_runtime::core::keyboard::Modifiers,
 
+    /// Optional callback for screen cursor position updates
+    /// Called whenever the screen-absolute cursor position changes
+    screen_cursor_callback: Option<Box<dyn Fn(Option<iced_runtime::core::Point>) + Send + Sync>>,
+
     #[cfg(feature = "toggle_debug")]
     debug_enabled: bool,
 }
@@ -54,6 +58,7 @@ where
             system_scale_factor: 1.0,
             scale_policy,
             modifiers: Default::default(),
+            screen_cursor_callback: None,
             #[cfg(feature = "toggle_debug")]
             debug_enabled: false,
         }
@@ -95,6 +100,15 @@ where
     /// Useful for widgets that need to track cursor movement during window geometry changes.
     pub fn screen_cursor(&self) -> Option<iced_runtime::core::Point> {
         self.screen_cursor_position
+    }
+
+    /// Set a callback to be invoked when the screen cursor position changes.
+    /// The callback receives the new screen-absolute cursor position (or None if cursor left the window).
+    pub fn set_screen_cursor_callback<F>(&mut self, callback: Option<F>)
+    where
+        F: Fn(Option<iced_runtime::core::Point>) + Send + Sync + 'static,
+    {
+        self.screen_cursor_callback = callback.map(|f| Box::new(f) as Box<dyn Fn(Option<iced_runtime::core::Point>) + Send + Sync>);
     }
 
     /// Returns the current theme of the [`State`].
@@ -148,6 +162,11 @@ where
                     x: screen_position.x as f32,
                     y: screen_position.y as f32,
                 });
+
+                // Notify callback of screen cursor update
+                if let Some(callback) = &self.screen_cursor_callback {
+                    callback(self.screen_cursor_position);
+                }
 
                 // TODO: Encode cursor moving outside of the window.
             }

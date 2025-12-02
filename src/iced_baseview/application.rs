@@ -264,7 +264,12 @@ where
     let (window_queue, window_queue_rx) = WindowQueue::new();
     let event_status = Rc::new(RefCell::new(baseview::EventStatus::Ignored));
 
-    let state = State::new(&application, viewport);
+    let mut state = State::new(&application, viewport);
+
+    // Set up screen cursor callback if provided
+    if let Some(callback) = settings.screen_cursor_callback {
+        state.set_screen_cursor_callback(Some(callback));
+    }
 
     let display_handle = crate::conversion::convert_raw_display_handle(window.raw_display_handle());
     let clipboard = Clipboard::new(display_handle);
